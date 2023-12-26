@@ -22,6 +22,21 @@ namespace PokemonReviewApp.Repository
         
         }
 
+        public bool CreateCategory(Category category)
+        {
+
+            //Change Tracker
+            //Add , updating , modifying , deleting
+            //connected vs disconnected
+            // EntityState.Added
+            // EntityState.Modified
+            //Emircan Gürbüz
+            _context.Add(category);
+            
+            return Save();
+
+        }
+
         public ICollection<Category> GetCategories()
         {
            
@@ -37,6 +52,16 @@ namespace PokemonReviewApp.Repository
         {
             return _context.PokemonCategories.Where(e => e.CategoryId == categoryId).Select(c => c.Pokemon).ToList();
        
+        }
+
+        public bool Save()
+        {
+            
+            var saved = _context.SaveChanges();
+
+            return saved >= 0 ? true : false;
+
+
         }
     }
 }
