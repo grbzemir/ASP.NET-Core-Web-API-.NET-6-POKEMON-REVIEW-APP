@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PokemonReviewApp.Dto;
 using PokemonReviewApp.Interfaces;
 using PokemonReviewApp.Models;
+using PokemonReviewApp.Repository;
 
 namespace PokemonReviewApp.Controllers
 {
@@ -12,14 +13,18 @@ namespace PokemonReviewApp.Controllers
     public class OwnerController : Controller
     {
         private readonly IOwnerRepository _ownerRepository;
+        private readonly ICountryRepository _countryRepository;
         private readonly IMapper _mapper;
 
-        public OwnerController(IOwnerRepository ownerRepository , IMapper mapper) 
+        public OwnerController(IOwnerRepository ownerRepository , 
+            ICountryRepository CountryRepository
+            ,  IMapper mapper) 
         
         
         {
 
             _ownerRepository = ownerRepository;
+            _countryRepository = CountryRepository;
             _mapper = mapper;
         
 
@@ -91,7 +96,63 @@ namespace PokemonReviewApp.Controllers
         }
 
 
+        [HttpPost]
+        [ProducesResponseType(201)]
+        [ProducesResponseType(400)]
 
+
+        public IActionResult CreateOwner([FromQuery] int countryId , [FromBody] OwnerDto ownerCreate)
+
+        {
+
+            if (ownerCreate == null)
+
+                return BadRequest(ModelState);
+
+            var owners = _ownerRepository.GetOwners()
+                .Where(c => c.Name.Trim().ToUpper() == ownerCreate.LastName.Trim().ToUpper()).FirstOrDefault();
+
+
+            if (owners != null)
+
+            {
+
+                ModelState.AddModelError("", $"Owner {ownerCreate.LastName} already exists");
+
+                return StatusCode(422, ModelState);
+
+
+            }
+
+            if (!ModelState.IsValid)
+
+                return BadRequest(ModelState);
+
+
+            var OwnerMap = _mapper.Map<Owner>(ownerCreate);
+
+            OwnerMap.Country = _countryRepository.GetCountry(countryId);
+
+            if (!_ownerRepository.CreateOwner(OwnerMap))
+
+            {
+
+                ModelState.AddModelError("", $"Something went wrong saving {OwnerMap.Name}");
+
+                return StatusCode(500, ModelState);
+
+            }
+
+            return Ok("Succesfully created");
+
+
+
+
+
+
+
+
+        }
 
 
     }
