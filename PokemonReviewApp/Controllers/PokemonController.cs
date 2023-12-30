@@ -4,37 +4,38 @@ using PokemonReviewApp.Data;
 using PokemonReviewApp.Dto;
 using PokemonReviewApp.Interfaces;
 using PokemonReviewApp.Models;
+using PokemonReviewApp.Repository;
 
 namespace PokemonReviewApp.Controllers
 {
     [Route("api/controller]")]
     [ApiController]
-    public class PokemonController: Controller
+    public class PokemonController : Controller
     {
 
         private readonly IPokemonRepository _pokemonRepository;
         private readonly IMapper _mapper;
 
-        public PokemonController(IPokemonRepository pokemonRepository , IMapper mapper)
+        public PokemonController(IPokemonRepository pokemonRepository, IMapper mapper)
         {
 
             _pokemonRepository = pokemonRepository;
             _mapper = mapper;
-            
+
         }
 
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(IEnumerable<Pokemon>))]
-   
-         
+
+
         public IActionResult GetPokemons()
 
         {
 
-            var pokemons = _mapper.Map < List < PokemonDto >> (_pokemonRepository.GetPokemons());
- 
-         
-            
+            var pokemons = _mapper.Map<List<PokemonDto>>(_pokemonRepository.GetPokemons());
+
+
+
             if (!ModelState.IsValid)
 
                 return BadRequest(ModelState);
@@ -51,7 +52,7 @@ namespace PokemonReviewApp.Controllers
 
         {
 
-            if(!_pokemonRepository.PokemonExists(pokeId))
+            if (!_pokemonRepository.PokemonExists(pokeId))
 
                 return NotFound();
 
@@ -62,7 +63,7 @@ namespace PokemonReviewApp.Controllers
                 return BadRequest(ModelState);
 
             return Ok(pokemon);
-            
+
         }
 
         [HttpGet("rating/{pokeId}")]
@@ -87,5 +88,57 @@ namespace PokemonReviewApp.Controllers
 
         }
 
+
+        [HttpPost]
+        [ProducesResponseType(201)]
+        [ProducesResponseType(400)]
+
+
+        public IActionResult CreatePokemon([FromQuery] int ownerId, [FromQuery] int categoryId , [FromBody] PokemonDto pokemonCreate)
+
+        {
+
+            if (pokemonCreate == null)
+                return BadRequest(ModelState);
+
+            var pokemons = _pokemonRepository.GetPokemons()
+                .Where(c => c.Name.Trim().ToUpper() == pokemonCreate.Name.Trim().ToUpper()).FirstOrDefault();
+
+
+            if (pokemons != null)
+
+            {
+
+                ModelState.AddModelError("", $"Owner {pokemonCreate.Name} already exists");
+
+                return StatusCode(422, ModelState);
+
+
+            }
+
+            if (!ModelState.IsValid)
+
+                return BadRequest(ModelState);
+
+
+            var pokemonMap = _mapper.Map<Pokemon>(pokemonCreate);
+
+            
+
+            if (!_pokemonRepository.CreatePokemon(ownerId , categoryId , pokemonMap))
+
+            {
+
+                ModelState.AddModelError("", $"Something went wrong saving {pokemonMap.Name}");
+
+                return StatusCode(500, ModelState);
+
+            }
+
+            return Ok("Succesfully created");
+
+
+        }
     }
-}
+
+ }
