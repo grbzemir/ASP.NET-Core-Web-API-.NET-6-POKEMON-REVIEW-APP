@@ -94,7 +94,7 @@ namespace PokemonReviewApp.Controllers
 
         }
 
-
+        [HttpGet("{reviewId}")]
         [HttpPost]
         [ProducesResponseType(201)]
         [ProducesResponseType(400)]
@@ -150,6 +150,101 @@ namespace PokemonReviewApp.Controllers
 
         }
 
+        [HttpPut("{reviewerId}")]
+        [HttpPost]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+
+        public IActionResult updateReview(int reviewId, [FromBody] ReviewDto updateReview)
+
+        {
+
+            if (updateReview == null)
+
+                return BadRequest(ModelState);
+
+            if (reviewId != updateReview.Id)
+                return BadRequest(ModelState);
+
+            if (!_reviewerRepository.ReviewerExists(reviewId))
+                return NotFound();
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+
+
+            var review = _reviewRepository.GetReviews()
+                .Where(c => c.Title.Trim().ToUpper() == updateReview.Title.Trim().ToUpper()).FirstOrDefault();
+
+            if (review != null)
+
+            {
+                ModelState.AddModelError("", $"Country {updateReview.Title} already exists");
+                return StatusCode(422, ModelState);
+            }
+
+            if (!ModelState.IsValid)
+
+                return BadRequest(ModelState);
+
+            var reviewMap = _mapper.Map<Review>(updateReview);
+
+
+            if (!_reviewRepository.UpdateReview(reviewMap))
+
+            {
+                ModelState.AddModelError("", $"Something went wrong saving");
+                return StatusCode(500, ModelState);
+            }
+
+
+            return Ok("Succesfully created");
+
+
+        }
+
+        [HttpDelete("{reviewId}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+
+        public IActionResult Deletereview(int reviewId)
+
+        {
+
+            if (!_reviewRepository.ReviewExists(reviewId))
+
+                return NotFound();
+
+            var review = _reviewRepository.GetReview(reviewId);
+
+            if (_reviewRepository.DeleteReview(review))
+            {
+
+                ModelState.AddModelError("", $"Category {review.Title} cannot be deleted because it is used by at least one pokemon");
+
+                return StatusCode(409, ModelState);
+
+            }
+
+            if (!ModelState.IsValid)
+
+                return BadRequest(ModelState);
+
+            if (!_reviewRepository.DeleteReview(review))
+
+            {
+
+                ModelState.AddModelError("", $"Something went wrong deleting {review.Title}");
+
+                return StatusCode(500, ModelState);
+
+            }
+
+            return Ok("Succesfuly deleted");
+
+        }
 
 
     }
